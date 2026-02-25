@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://btpm2qyr43vu1"]
+
+[ext_resource type="PackedScene" uid="uid://b2qq70f106xmy" path="res://block.tscn" id="1_hbghi"]
+[ext_resource type="PackedScene" uid="uid://btpm2qyr43vu1" path="res://level_1.tscn" id="2_hn12h"]
+
+[node name="Level1" instance=ExtResource("2_hn12h")]
+
+[node name="DirectionalLight3D" parent="." index="2"]
+shadow_enabled = true
+
+[node name="Block" parent="." index="3" instance=ExtResource("1_hbghi")]
+transform = Transform3D(0.9987873, 0, 0.04923328, -0.025157865, 0.8595848, 0.51037335, -0.04232018, -0.51099306, 0.8585424, 0, 3.9096093, 5.58087)

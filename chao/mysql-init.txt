@@ -1,0 +1,1 @@
+ALTER user 'root'@'localhost' identified by 'CododyArobase2020';

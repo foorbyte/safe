@@ -1,0 +1,3 @@
+geometry,nom_du_batiment,id_type_propriete_fk,nombre_de_niveaux,nombre_el,nom_du_proprietaire,contact_du_proprietaire,nom_de_rue,detail_localisation,id_type_batiment_fk,id_param_categorie_batiment_fk,commentaires,numero_de_rue
+POLYGON ((388816.89310219 588364.92385655, 388814.21454467514 588381.1097343662, 388838.3522691 588384.76281609, 388816.89310219 588364.92385655)),bat 2 CSV,1,4,4,Konan CSV,0778376639,rue danga TEMP CSV,null CSV,15,3,COM A CSV,NUM RUE A CSV
+POLYGON ((388816.89310219 588364.92385655, 388814.21454467514 588381.1097343662, 388838.3522691 588384.76281609, 388816.89310219 588364.92385655)),bat B CSV,1,4,4,COULIBALY CSV,0778376639,rue COUL CSV,null Detail CSV,15,3,COM B CSV,NUM RUE B CSV

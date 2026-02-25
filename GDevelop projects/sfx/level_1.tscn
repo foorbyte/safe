@@ -1,0 +1,57 @@
+[gd_scene load_steps=8 format=3 uid="uid://dc8wtj0rnrenh"]
+
+[ext_resource type="PackedScene" uid="uid://bqwlmahdyni7d" path="res://block.tscn" id="1_3hls8"]
+[ext_resource type="PackedScene" uid="uid://du7su7lgyl6nk" path="res://steve.tscn" id="2_hbghi"]
+[ext_resource type="Texture2D" uid="uid://dvi4mqi51j22h" path="res://icon.svg" id="3_hn12h"]
+[ext_resource type="Script" uid="uid://c6xhvuurjeaxg" path="res://icon.gd" id="4_ihfcg"]
+[ext_resource type="PackedScene" uid="uid://dxh5gocaogfh3" path="res://coin.tscn" id="5_rka8t"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_ilcil"]
+size = Vector3(10, 0.5, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ilcil"]
+size = Vector3(10, 0.5, 10)
+
+[node name="Level1" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.74251384, 0.66983074, 0, -0.66983074, 0.74251384, 0, 3.9218884, 6.806278)
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25808772, 0)
+metadata/_edit_group_ = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("BoxMesh_ilcil")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("BoxShape3D_ilcil")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.8250817, -0.15940835, -0.5420602, 0.5251083, 0.57048714, 0.63151073, 0.20857029, -0.8056882, 0.55440515, -24.175922, 3.3052566, 0)
+shadow_enabled = true
+
+[node name="Blocks" type="Node" parent="."]
+
+[node name="Block1" parent="Blocks" instance=ExtResource("1_3hls8")]
+transform = Transform3D(0.5207414, -0.42634097, -0.73963624, 0.0068837986, 0.86844313, -0.49574128, 0.8536868, 0.25306153, 0.4551691, -1.6214292, 3.2169938, 3.592021)
+
+[node name="Block2" parent="Blocks" instance=ExtResource("1_3hls8")]
+transform = Transform3D(0.5207414, -0.42634097, -0.73963624, -0.2787874, 0.73395383, -0.619346, 0.80691147, 0.52872044, 0.2633416, -0.86253333, 4.906904, 3.592021)
+
+[node name="Block3" parent="Blocks" instance=ExtResource("1_3hls8")]
+transform = Transform3D(0.5207414, -0.42634097, -0.73963624, 0.0068837986, 0.86844313, -0.49574128, 0.8536868, 0.25306153, 0.4551691, -2.4597733, 5.8107924, 3.592021)
+
+[node name="Block4" parent="Blocks" instance=ExtResource("1_3hls8")]
+transform = Transform3D(0.5207414, -0.42634097, -0.73963624, -0.2787874, 0.73395383, -0.619346, 0.80691147, 0.52872044, 0.2633416, -5.0798798, 7.500703, 2.3820343)
+
+[node name="Steve" parent="." instance=ExtResource("2_hbghi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1, 4)
+
+[node name="Icon" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.69731903, -3.7022648)
+texture = ExtResource("3_hn12h")
+script = ExtResource("4_ihfcg")
+
+[node name="Coin" parent="." instance=ExtResource("5_rka8t")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0616775, 0.602574, -2.260131)

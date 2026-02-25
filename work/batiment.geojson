@@ -1,0 +1,171 @@
+{
+  "type": "FeatureCollection",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:EPSG::32630"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              388816.89310219,
+              588364.92385655
+            ],
+            [
+              388814.21454467514,
+              588381.1097343662
+            ],
+            [
+              388838.3522691,
+              588384.76281609
+            ],
+            [
+              388816.89310219,
+              588364.92385655
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "numero_de_rue": 412,
+        "commentaires": "COM GeoJSON A",
+        "nom_du_batiment": "NOM DU BATIMENT GeoJSON 1",
+        "id_type_propriete_fk": 1,
+        "nombre_de_niveaux": 4,
+        "nombre_el": 4,
+        "nom_du_proprietaire": "Konan GeoJSON",
+        "contact_du_proprietaire": "0779376639",
+        "nom_de_rue": "rue danga GeoJSON",
+        "detail_localisation": "LOC GeoJSON",
+        "id_type_batiment_fk": 15,
+        "id_param_categorie_batiment_fk": 3
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              388816.89310219,
+              588364.92385655
+            ],
+            [
+              388814.21454467514,
+              588381.1097343662
+            ],
+            [
+              388838.3522691,
+              588384.76281609
+            ],
+            [
+              388816.89310219,
+              588364.92385655
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "numero_de_rue": 413,
+        "commentaires": "COM GeoJSON B",
+        "nom_du_batiment": "NOM DU BATIMENT GeoJSON 2",
+        "id_type_propriete_fk": 1,
+        "nombre_de_niveaux": 4,
+        "nombre_el": 4,
+        "nom_du_proprietaire": "Konan Prop GeoJSON",
+        "contact_du_proprietaire": "779307408",
+        "nom_de_rue": "rue danga GeoJSON",
+        "detail_localisation": "Det GeoJSON",
+        "id_type_batiment_fk": 15,
+        "id_param_categorie_batiment_fk": 3
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              388816.89310219,
+              588364.92385655
+            ],
+            [
+              388814.21454467514,
+              588381.1097343662
+            ],
+            [
+              388838.3522691,
+              588384.76281609
+            ],
+            [
+              388816.89310219,
+              588364.92385655
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "numero_de_rue": 414,
+        "commentaires": "COM GeoJSON C",
+        "nom_du_batiment": "NOM DU BATIMENT GeoJSON 3",
+        "id_type_propriete_fk": 1,
+        "nombre_de_niveaux": 4,
+        "nombre_el": 4,
+        "nom_du_proprietaire": "Konan Prop 3 GeoJSON",
+        "contact_du_proprietaire": "779307409",
+        "nom_de_rue": "rue danga GeoJSON",
+        "detail_localisation": "Det GeoJSON",
+        "id_type_batiment_fk": 15,
+        "id_param_categorie_batiment_fk": 3
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              388816.89310219,
+              588364.92385655
+            ],
+            [
+              388814.21454467514,
+              588381.1097343662
+            ],
+            [
+              388838.3522691,
+              588384.76281609
+            ],
+            [
+              388816.89310219,
+              588364.92385655
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "numero_de_rue": 416,
+        "commentaires": "COM GeoJSON D",
+        "nom_du_batiment": "NOM DU BATIMENT GeoJSON 4",
+        "id_type_propriete_fk": 1,
+        "nombre_de_niveaux": 4,
+        "nombre_el": 4,
+        "nom_du_proprietaire": "Konan GeoJSON",
+        "contact_du_proprietaire": "779307411",
+        "nom_de_rue": "rue danga GeoJSON",
+        "detail_localisation": "Det GeoJSON",
+        "id_type_batiment_fk": 15,
+        "id_param_categorie_batiment_fk": 3
+      }
+    }
+  ]
+}

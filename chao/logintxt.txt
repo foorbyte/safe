@@ -1,0 +1,347 @@
+ public Response<CompteDto> login(final Request<CompteDto> request, final Locale locale) throws ParseException {
+        slf4jLogger.info("----begin login-----");
+        response = new Response<>();
+
+        //Affichage du champ isAccountCloudCreated uniquement dans le réponse de fin
+        CompteDto compteDtoIsAccountCloudCreated = new CompteDto();
+        try {
+            CompteDto compteDto = request.getData();
+            String getNdOrLogin = compteDto.getNd();
+            if (!isValidNdOrLogin(getNdOrLogin, locale)) return response;
+            /** Recuperation de compte de test */
+            ParametreApi parametreApiCompteTest = getParametreApi(COMPTE_TEST, locale);
+            if (parametreApiCompteTest == null) return response;
+            // Méthode pour remplir le DTO à partir des valeurs extraites
+            CompteDto compteDtoForTest = extractedValuesForTest(parametreApiCompteTest.getJsonValue());
+            /** recuperer le compte de test si possible si le nd ou le login correspond a celui du compte test */
+            if (isTestAccountLogin(getNdOrLogin, compteDtoForTest)) {
+                /** Verifier si le compte test existe en bd, le creer sinon recuperer la variable permettant créer le compte sur tuya */
+                Compte compte = compteRepository.findByIdLoginOrNd(getNdOrLogin, false);
+                if (Objects.isNull(compte)){
+                    compte = createTestAccountLogin(compteDtoForTest, locale);
+                    if (response.isHasError()){
+                        return response;
+                    }
+                }
+                compteDto = CompteTransformer.INSTANCE.toDto(compte);
+                response = sendOtpCompteTest(compteDtoForTest, locale);
+                response.setItem(compteDto);
+                response.setHasError(false);
+                return response;
+            }else {
+                ParametreApi parametreApiSearchForCreateCompteByNd = parametreApiRepository.findByCode(SEARCH_BSCS_FOR_CREATE_COMPTE, false);
+                if (parametreApiSearchForCreateCompteByNd == null) {
+                    response.setStatus(functionalError.DATA_NOT_EXIST(SEARCH_BSCS_FOR_CREATE_COMPTE, locale));
+                    response.setHasError(true);
+                    return response;
+                }
+
+                ParametreApi parametreApi1 = parametreApiRepository.findByCode(SEARCH_BSCS_FOR_CREATE, false);
+                if (parametreApi1 == null) {
+                    response.setStatus(functionalError.DATA_NOT_EXIST(SEARCH_BSCS_FOR_CREATE, locale));
+                    response.setHasError(true);
+                    return response;
+                }
+
+                ParametreApi parametreApi2 = parametreApiRepository.findByCode(SEARCH_BSCS_FOR_STATUS, false);
+                if (parametreApi2 == null) {
+                    response.setStatus(functionalError.DATA_NOT_EXIST("SEARCH_BSCS_FOR_STATUS", locale));
+                    response.setHasError(true);
+                    return response;
+                }
+
+                ParametreApi parametreApi3 = parametreApiRepository.findByCode(ERROR_MESSAGE_USER_NOT_EXIST_BSCS, false);
+                if (parametreApi3 == null) {
+                    response.setStatus(functionalError.DATA_NOT_EXIST(ERROR_MESSAGE_USER_NOT_EXIST_BSCS, locale));
+                    response.setHasError(true);
+                    return response;
+                }
+
+                ParametreApi parametreApi4 = parametreApiRepository.findByCode(ERROR_MESSAGE_STATUS_COMPTE, false);
+                if (parametreApi4 == null) {
+                    response.setStatus(functionalError.DATA_NOT_EXIST(ERROR_MESSAGE_STATUS_COMPTE, locale));
+                    response.setHasError(true);
+                    return response;
+                }
+                /** Verification du compte */
+                Compte existingCompte = compteRepository.findByIdLoginOrNd(getNdOrLogin);
+                // creation du compte a partir de bscs
+                if (isNull(existingCompte)) {
+
+                    Compte compte = new Compte();
+
+                    //faire une recherche dans BSCS pour la creation du compte
+                    Map<String, Object> responseSearchInBscsForCreate = searchInBscs(compteDto, parametreApi1);
+                    // responseSearchInBscsForCreate = CallAPi(compteDto, parametreApi1.getJsonValue());
+                    if ((boolean) responseSearchInBscsForCreate.get("hasError") && responseSearchInBscsForCreate.get("itemMap") == null) {
+                        Status status = new Status();
+                        status.setMessage(parametreApi3.getUrl());
+                        status.setCode("901");
+                        response.setStatus(status);
+                        response.setHasError(true);
+                        return response;
+                    }
+                    //si on a pas le telephone on récupère avec le nouveau service
+                    String recuperationContactPourOTP = "";
+                    Map<String, Object> itemMap = (Map<String, Object>) responseSearchInBscsForCreate.get("itemMap");
+                    compte.setTelephone1((String) itemMap.get("contactClient"));
+                    String nom = (String) itemMap.get("adrLname");
+                    compte.setNom(nom.isEmpty() ? (String) itemMap.get("adrName") : nom);
+                    //compte.setLogin((String) itemMap.get("login"));
+                    compte.setPrenom((String) itemMap.get("adrFname"));
+                    //compte.setNd((String) itemMap.get("nd"));
+                    //Pour la recuperations des autres infos manquant
+                    List<Map<String, Object>> info = getInfoForDatabase(getNdOrLogin, response, locale);
+                    if (response.isHasError()) {
+                        return response;
+                    }
+                    compte.setLogin((String) info.get(0).get("LOGIN"));
+                    compte.setNd((String) info.get(0).get("NUM_ADSL"));
+
+                    recuperationContactPourOTP = (String) itemMap.get("contactClient");
+                    String numero = "";
+                    if (recuperationContactPourOTP == "" || recuperationContactPourOTP.equals("")) {
+                        String nd = itemMap.get("nd").toString();
+                        //Map<String,Object> responseSearchInBscsForCreateContact = searchInBscsContact(compteDto, parametreApiSearchForCreateCompteByNd);
+                        String req = parametreApiSearchForCreateCompteByNd.getJsonValue().replace("[[ND]]", nd);
+                        List<Map<String, Object>> responseSearchInBscsForCreateContact = callAPi(req, parametreApiSearchForCreateCompteByNd.getUrl());
+                        if (!responseSearchInBscsForCreateContact.isEmpty()) {
+                            for (Map<String, Object> reqMap : responseSearchInBscsForCreateContact) {
+                                if (reqMap != null && !reqMap.isEmpty()) {
+                                    numero = reqMap.containsKey("NUMERO_MOBILE") && reqMap.get("NUMERO_MOBILE") != null &&
+                                            notBlank(reqMap.get("NUMERO_MOBILE").toString())
+                                            ? reqMap.get("NUMERO_MOBILE").toString()
+                                            : "";
+                                }
+                            }
+                        }
+                        compte.setTelephone1(numero);
+                    }
+                    compte.setIsAccountCloudCreated(false);
+                    //faire une recherche dans BSCS pour obtenir le status
+                    Map<String, Object> responseSearchInBscsForCheckStatus = searchInBscs(compteDto, parametreApi2);
+                    if ((boolean) responseSearchInBscsForCheckStatus.get("hasError")) {
+                        Status status = new Status();
+                        status.setMessage(parametreApi3.getUrl());
+                        status.setCode("901");
+                        response.setStatus(status);
+                        response.setHasError(true);
+                        return response;
+                    }
+                    Map<String, Object> infosClient = (Map<String, Object>) responseSearchInBscsForCheckStatus.get("infosClient");
+                    String statusInBscs = (String) infosClient.get("statut");
+                    StatutCompte statutCompte = null;
+
+                    // On utilise le status bscs ou on le considere comme actif
+                    if (isValidString(statusInBscs)) {
+                        statutCompte = statutCompteRepository.findByLibelle(statusInBscs, false);
+                        if (statutCompte == null) {
+                            response.setStatus(functionalError.DATA_NOT_EXIST("statusCompte statusCompteId introuvable", locale));
+                            response.setHasError(true);
+                            return response;
+                        }
+                        compte.setStatutCompte(statutCompte);
+                    } else {
+                        statutCompte = statutCompteRepository.findOne(1, false);
+                        if (statutCompte == null) {
+                            response.setStatus(functionalError.DATA_NOT_EXIST("statusCompte statusCompteId introuvable", locale));
+                            response.setHasError(true);
+                            return response;
+                        }
+                        compte.setStatutCompte(statutCompte);
+                    }
+
+                    compte.setLoginDomotique(Integer.toString(getRndNumber()));
+                    compte.setCreatedAt(getCurrentDate());
+                    compte.setDateVerificationCompte(getCurrentDate());
+                    compte.setCreatedBy(request.getUser());
+                    compte.setIsDeleted(false);
+                    existingCompte = compteRepository.save(compte);
+                }
+
+                //todo lors de la connection verifier si le user est à un compte tuya d'après notre base de donnée avec un champ correspondant sinon nous
+
+                if (existingCompte.getIsAccountCloudCreated()) {
+                    //Les sets de isAccountCloudCreated
+                    if (existingCompte.getEmail() == null || existingCompte.getEmail().trim() == null || existingCompte.getEmail().trim().equalsIgnoreCase("")) {
+                        compteDtoIsAccountCloudCreated.setEmail("");
+                    } else {
+                        compteDtoIsAccountCloudCreated.setEmail(existingCompte.getEmail());
+                    }
+                    compteDtoIsAccountCloudCreated.setIsAccountCloudCreated(existingCompte.getIsAccountCloudCreated());
+                    compteDtoIsAccountCloudCreated.setTelephone1(existingCompte.getTelephone1());
+                    compteDtoIsAccountCloudCreated.setLoginDomotique(existingCompte.getLoginDomotique());
+
+                    response.setItem(compteDtoIsAccountCloudCreated);
+                }
+                if (existingCompte.getDateExpiration() != null) {
+                    if (isBeforeTodayDate(existingCompte.getDateExpiration())) {
+                        ParametreApi parametreApi = parametreApiRepository.findByCode(ERROR_MESSAGE_DATE_EXPIRATION, false);
+                        if (parametreApi == null) {
+                            response.setStatus(functionalError.DATA_NOT_EXIST("ERROR_MESSAGE_DATE_EXPIRATION", locale));
+                            response.setHasError(true);
+                            return response;
+                        }
+                        String dateFormate = dateFormat.format(existingCompte.getDateExpiration());
+                        String message = parametreApi.getUrl().replace("[[DATE_EXPIRATION]]", dateFormate);
+                        Status status = new Status();
+                        status.setMessage(message);
+                        status.setCode("901");
+                        response.setStatus(status);
+                        response.setHasError(true);
+                        return response;
+                    }
+                }
+
+                CompteDto existingCompteDto = CompteTransformer.INSTANCE.toDto(existingCompte);
+
+                //faire une recherche dans BSCS pour obtenir le status
+                Map<String, Object> responseSearchInBscsForCheckStatus = searchInBscs(existingCompteDto, parametreApi2);
+                if ((boolean) responseSearchInBscsForCheckStatus.get("hasError")) {
+                    Status status = new Status();
+                    status.setMessage(parametreApi3.getUrl());
+                    status.setCode("901");
+                    response.setStatus(status);
+                    response.setHasError(true);
+                    return response;
+                }
+                Map<String, Object> infosClient = (Map<String, Object>) responseSearchInBscsForCheckStatus.get("infosClient");
+                String statusInBscs = (String) infosClient.get("statut");
+                StatutCompte statutCompte = null;
+
+                // On prend le status bscs ou celui de notre base
+                if (isValidString(statusInBscs)) {
+                    statutCompte = statutCompteRepository.findByLibelle(statusInBscs, false);
+                    if (statutCompte == null) {
+                        response.setStatus(functionalError.DATA_NOT_EXIST("statusCompte statusCompteId introuvable", locale));
+                        response.setHasError(true);
+                        return response;
+                    }
+                } else {
+                    statutCompte = existingCompte.getStatutCompte();
+                    if (statutCompte == null) {
+                        response.setStatus(functionalError.DATA_NOT_EXIST("statusCompte statusCompteId introuvable", locale));
+                        response.setHasError(true);
+                        return response;
+                    }
+                }
+
+                if (statutCompte.getId() != 1) {
+                    existingCompte.setStatutCompte(statutCompte);
+                    compteRepository.save(existingCompte);
+
+                    String message = parametreApi4.getUrl().replace("[[STATUS_COMPTE]]", statutCompte.getLibelle().toLowerCase());
+                    Status status = new Status();
+                    status.setMessage(message);
+                    status.setCode("901");
+                    response.setStatus(status);
+                    response.setHasError(true);
+                    return response;
+                }
+
+                existingCompte.setStatutCompte(statutCompte);
+                compteRepository.save(existingCompte);
+
+                if (existingCompte.getDateVerificationCompte() != null && isBeforeTodayDate(existingCompte.getDateVerificationCompte())) {
+
+                    //Fonction d'appel d'OTP
+                    response = sendOtp(existingCompteDto, locale);
+                    //Ajout des sets
+                    compteDtoIsAccountCloudCreated.setIsAccountCloudCreated(existingCompteDto.getIsAccountCloudCreated());
+                    compteDtoIsAccountCloudCreated.setTelephone1(existingCompteDto.getTelephone1());
+                    compteDtoIsAccountCloudCreated.setLoginDomotique(existingCompteDto.getLoginDomotique());
+                    if (existingCompte.getEmail() == null || existingCompte.getEmail().trim() == null || existingCompte.getEmail().trim().equalsIgnoreCase("")) {
+                        compteDtoIsAccountCloudCreated.setEmail("");
+                    } else {
+                        compteDtoIsAccountCloudCreated.setEmail(existingCompte.getEmail());
+                    }
+                    /** ajout de l'id du compte existant dans le dto pour permettre l'update */
+                    compteDtoIsAccountCloudCreated.setId(existingCompte.getId());
+                    response.setItem(compteDtoIsAccountCloudCreated);
+                    return response;
+                }
+                ConnectedDevice device = null;
+                device = connectedDeviceRepository.findByDeviceIdAndCompte(compteDto.getDeviceId(), existingCompte.getId(), false);
+                if (device == null) {
+
+                    response = sendOtp(existingCompteDto, locale);
+                    compteDtoIsAccountCloudCreated.setIsAccountCloudCreated(existingCompteDto.getIsAccountCloudCreated());
+                    compteDtoIsAccountCloudCreated.setTelephone1(existingCompteDto.getTelephone1());
+                    compteDtoIsAccountCloudCreated.setLoginDomotique(existingCompteDto.getLoginDomotique());
+
+                    if (existingCompte.getEmail() == null || existingCompte.getEmail().trim().equalsIgnoreCase("")) {
+                        compteDtoIsAccountCloudCreated.setEmail("");
+                    } else {
+                        compteDtoIsAccountCloudCreated.setEmail(existingCompte.getEmail());
+                    }
+                    /** ajout de l'id du compte existant dans le dto pour permettre l'update */
+                    compteDtoIsAccountCloudCreated.setId(existingCompte.getId());
+                    response.setItem(compteDtoIsAccountCloudCreated);
+
+                    /** Ajout d'un nouvel appareil à ajouter existe sur ce compte */
+                    ConnectedDevice deviceToSave = new ConnectedDevice();
+                    deviceToSave.setDeviceId(compteDto.getDeviceId());
+                    deviceToSave.setModel(compteDto.getModel());
+                    deviceToSave.setNom(compteDto.getNomDevice());
+                    deviceToSave.setMarque(compteDto.getMarque());
+                    deviceToSave.setAdresseIp(compteDto.getAdresseIp());
+                    deviceToSave.setAdresseMac(compteDto.getAdresseMac());
+                    deviceToSave.setCompte(existingCompte);
+                    deviceToSave.setLastConnection(getCurrentDate());
+                    deviceToSave.setCreatedAt(getCurrentDate());
+                    deviceToSave.setCreatedBy(existingCompte.getId());
+                    deviceToSave.setIsDeleted(false);
+                    /** Nous allons vérifier si le nouvel appareil à ajouter existe sur ce compte */
+
+                    connectedDeviceRepository.save(deviceToSave);
+                    return response;
+                } else {
+
+                    /** Modification pourque un utilisateur puisse avoir plusieurs devices. */
+                    if (existingCompte != device.getCompte()) {
+                        response = sendOtp(existingCompteDto, locale);
+                        compteDtoIsAccountCloudCreated.setIsAccountCloudCreated(existingCompteDto.getIsAccountCloudCreated());
+                        compteDtoIsAccountCloudCreated.setTelephone1(existingCompteDto.getTelephone1());
+                        compteDtoIsAccountCloudCreated.setLoginDomotique(existingCompteDto.getLoginDomotique());
+
+                        if (existingCompte.getEmail() == null || existingCompte.getEmail().trim().equalsIgnoreCase("")) {
+                            compteDtoIsAccountCloudCreated.setEmail("");
+                        } else {
+                            compteDtoIsAccountCloudCreated.setEmail(existingCompte.getEmail());
+                        }
+                        compteDtoIsAccountCloudCreated.setId(existingCompte.getId());
+                        response.setItem(compteDtoIsAccountCloudCreated);
+                        return response;
+
+                    } else {
+                        device.setLastConnection(getCurrentDate());
+                        connectedDeviceRepository.save(device);
+                    }
+                }
+                /** Les sets de isAccountCloudCreated */
+                compteDtoIsAccountCloudCreated.setIsAccountCloudCreated(existingCompteDto.getIsAccountCloudCreated());
+                compteDtoIsAccountCloudCreated.setTelephone1(existingCompteDto.getTelephone1());
+                compteDtoIsAccountCloudCreated.setLoginDomotique(existingCompteDto.getLoginDomotique());
+
+                if (existingCompte.getEmail() == null || existingCompte.getEmail().trim() == null || existingCompte.getEmail().trim().equalsIgnoreCase("")) {
+                    compteDtoIsAccountCloudCreated.setEmail("");
+                } else {
+                    compteDtoIsAccountCloudCreated.setEmail(existingCompte.getEmail());
+                }
+                compteDtoIsAccountCloudCreated.setId(existingCompte.getId());
+                if (!existingCompte.getIsAccountCloudCreated()){
+                    compteDto = CompteTransformer.INSTANCE.toDto(existingCompte);
+                    response = sendOtp(compteDto, locale);
+                    response.setItem(compteDto);
+                    return response;
+                }
+            }
+            response.setStatus(functionalError.SUCCESS("", locale));
+            response.setHasError(false);
+            response.setItem(compteDtoIsAccountCloudCreated);
+            slf4jLogger.info("----end login-----");
+        } catch (Exception e) {
+            exceptionUtils.EXCEPTION(response, locale, e);
+        }
+        return response;
+    }
